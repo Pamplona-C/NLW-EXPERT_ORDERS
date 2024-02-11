@@ -1,4 +1,4 @@
-import { View,TouchableOpacity, ImageProps, Image, Text } from "react-native"
+import { View,TouchableOpacity,TouchableOpacityProps, ImageProps, Image, Text } from "react-native"
 
 
 type ProductDataProps = {
@@ -6,7 +6,7 @@ type ProductDataProps = {
     description: string
     thumbnail: ImageProps
 }
-type ProductProps = TouchableOpacity & {
+type ProductProps = TouchableOpacityProps & {
     data: ProductDataProps
 }
 
