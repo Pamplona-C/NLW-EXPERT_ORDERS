@@ -1,7 +1,7 @@
 import { Header } from "@/components/header";
 import { Alert, ScrollView, Text, View, Linking } from "react-native";
 import { Product } from "@/components/product";
-import { ProductCartProps, useCartStore } from "@/stores/cart-store";
+import { type ProductCartProps, useCartStore } from "@/stores/cart-store";
 import { formatCurrency } from "@/utils/functions/formatCurrency";
 import { Input } from "@/components/input";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view"
@@ -10,8 +10,9 @@ import { Feather } from "@expo/vector-icons";
 import { LinkButton } from "@/components/link-button";
 import { useState } from "react";
 import { useNavigation } from "expo-router";
-
-const PHONE_NUMBER = ""
+import { collection, addDoc, Timestamp } from "firebase/firestore"; 
+import { db } from "@/utils/firebaseConfig"; 
+const PHONE_NUMBER = "64999013595"
 
 
 export default function Cart(){
@@ -33,23 +34,40 @@ export default function Cart(){
         ])
     }
 
-    function handleOrder(){
-        if(address.trim().length === 0){
-            return Alert.alert("Pedido", "Informe os dados da entrega !")
+    async function handleOrder() {
+        if (address.trim().length === 0) {
+            return Alert.alert("Pedido", "Informe os dados da entrega!");
         }
-
-        const products = cartStore.products.map((product) => `\n ${product.quantity} ${product.title}`).join("")
-
-        const message = `
-        🍔  NOVO PEDIDO
-            \n Entregar em: ${address}
-             ${products}
-             
-            \n Valor Total: ${total}`
-
-        Linking.openURL(`http://api.whatsapp.com/send?phone=${PHONE_NUMBER}&text=${message}`)
-        cartStore.clear()
-        navigation.goBack()
+    
+        // Coletar os produtos do carrinho
+        const products = cartStore.products.map((product) => ({
+            id: product.id,
+            title: product.title,
+            quantity: product.quantity,
+            price: product.price,
+        }));
+    
+        const totalValue = cartStore.products.reduce((total, product) => total + product.price * product.quantity, 0);
+    
+        // Dados do pedido
+        const orderData = {
+            address: address,
+            products: products,
+            total: totalValue,
+            timestamp: Timestamp.now(),
+        };
+    
+        try {
+            // Referenciar a coleção 'orders' e adicionar o documento de pedido
+            const docRef = await addDoc(collection(db, 'orders'), orderData);
+            Alert.alert("Sucesso", "Pedido enviado com sucesso!");
+            // console.log("pedido enviado");
+            cartStore.clear();
+            navigation.goBack();
+        } catch (error) {
+            console.error("Erro ao enviar pedido: ", error);
+            Alert.alert("Erro", "Houve um problema ao enviar o pedido.");
+        }
     }
 
     return(
@@ -82,7 +100,7 @@ export default function Cart(){
                         Total:
                     </Text>
 
-                    <Text className="text-lime-400 text-2xl font-heading">
+                    <Text className="text-blue-700 text-2xl font-heading">
                         {total}
                     </Text>
                 </View>
